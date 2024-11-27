@@ -1,4 +1,5 @@
 from openai import OpenAI
+import os
 
 client = OpenAI()
 
@@ -47,3 +48,4 @@ message_history = ask("그럼 오늘 날씨에 맞는 옷차림을 추천해줘.
 # 두 번째 답변
 print(message_history[-1])
 
+print("Current API Key:", os.environ.get('OPENAI_API_KEY'))
