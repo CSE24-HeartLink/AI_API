@@ -7,7 +7,7 @@ import os  # 파일/디렉토리 작업
 app = FastAPI()  # FastAPI 인스턴스 생성
 client = OpenAI()
 
-@app.post("/transcribe")  # POST /transcribe 엔드포인트 생성
+@app.post("/api/ai/stt/transcribe")  # POST /transcribe 엔드포인트 생성
 async def transcribe_audio(audio_file: UploadFile = File(...)):  # 음성 파일 받기
    try:
        # 업로드된 파일을 임시 저장
