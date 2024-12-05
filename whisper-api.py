@@ -30,7 +30,11 @@ async def lifespan(app: FastAPI):
     global model, tokenizer, feature_extractor
     
     MODEL_ID = "jyering/whisper-ko-finetuned"
-    HF_TOKEN = "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"  # 허깅페이스 토큰 입력
+    HF_TOKEN = os.getenv("HF_TOKEN")
+    if not HF_TOKEN:
+        raise ValueError("HuggingFace token not found in environment variables")
+
+    login(token=HF_TOKEN)
     
     try:
         logger.info(f"Authenticating with HuggingFace Hub")
