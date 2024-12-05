@@ -6,7 +6,6 @@ from contextlib import asynccontextmanager
 import logging
 from datetime import datetime
 import os
-import torch
 
 logging.basicConfig(
     level=logging.INFO,
@@ -28,14 +27,14 @@ async def lifespan(app: FastAPI):
     # 시작할 때 모델 로드
     global model, tokenizer, feature_extractor
     
-    MODEL_PATH = "C:\\Users\\user\\Desktop\\CSE2024\\AI_API\\whisper_ko_final"  # 실제 모델 경로로 변경하세요
+    MODEL_ID = "jyering/whisper-ko-finetuned"  # 허깅페이스 허브의 모델 ID
     
     try:
-        logger.info(f"Loading model from {MODEL_PATH}")
+        logger.info(f"Loading model from HuggingFace Hub: {MODEL_ID}")
         
-        model = WhisperForConditionalGeneration.from_pretrained(MODEL_PATH)
-        tokenizer = WhisperTokenizer.from_pretrained(MODEL_PATH)
-        feature_extractor = WhisperFeatureExtractor.from_pretrained(MODEL_PATH)
+        model = WhisperForConditionalGeneration.from_pretrained(MODEL_ID)
+        tokenizer = WhisperTokenizer.from_pretrained(MODEL_ID)
+        feature_extractor = WhisperFeatureExtractor.from_pretrained(MODEL_ID)
         
         model.eval()
         
