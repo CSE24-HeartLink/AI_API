@@ -7,7 +7,12 @@ import os
 
 app = FastAPI()
 load_dotenv()
-client = OpenAI()
+
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("API 키가 설정되지 않았습니다")
+
+client = OpenAI(api_key=api_key)
 
 # 메시지 모델
 class Message(BaseModel):
