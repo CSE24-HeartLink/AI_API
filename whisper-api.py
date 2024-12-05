@@ -6,7 +6,10 @@ from contextlib import asynccontextmanager
 import logging
 from datetime import datetime
 import os
+import torch
+from huggingface_hub import login
 
+# 로깅 설정
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -24,14 +27,16 @@ feature_extractor = None
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 시작할 때 모델 로드
     global model, tokenizer, feature_extractor
     
-    MODEL_ID = "jyering/whisper-ko-finetuned"  # 허깅페이스 허브의 모델 ID
+    MODEL_ID = "jyering/whisper-ko-finetuned"
+    HF_TOKEN = "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"  # 허깅페이스 토큰 입력
     
     try:
-        logger.info(f"Loading model from HuggingFace Hub: {MODEL_ID}")
+        logger.info(f"Authenticating with HuggingFace Hub")
+        login(token=HF_TOKEN)
         
+        logger.info(f"Loading model from HuggingFace Hub: {MODEL_ID}")
         model = WhisperForConditionalGeneration.from_pretrained(MODEL_ID)
         tokenizer = WhisperTokenizer.from_pretrained(MODEL_ID)
         feature_extractor = WhisperFeatureExtractor.from_pretrained(MODEL_ID)
@@ -46,7 +51,6 @@ async def lifespan(app: FastAPI):
     yield
     
     logger.info("Cleaning up resources...")
-    global model, tokenizer, feature_extractor
     model = None
     tokenizer = None
     feature_extractor = None
