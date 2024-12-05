@@ -8,6 +8,8 @@ from datetime import datetime
 import os
 import torch
 from huggingface_hub import login
+from dotenv import load_dotenv
+load_dotenv()
 
 # 로깅 설정
 logging.basicConfig(
@@ -61,7 +63,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="Speech Recognition API",
-    description="Custom Whisper 모델을 사용한 음성 인식 API",
+    description="한국어 음성 데이터로 fine-tuning한 Whisper 모델을 사용한 음성 인식 API",
     version="1.0.0",
     lifespan=lifespan
 )
