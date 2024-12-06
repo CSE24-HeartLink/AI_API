@@ -20,7 +20,7 @@ def main():
     servers = [
         {"name": "Chat_API_1", "port": 8000},
         {"name": "DALLE_API_1", "port": 8001},
-        {"name": "STT_API_1", "port": 8002}
+        {"name": "Korean-STT", "port": 8002}
     ]
     
     processes = []
