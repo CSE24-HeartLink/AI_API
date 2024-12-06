@@ -104,7 +104,21 @@ async def transcribe_audio(audio_file: UploadFile = File(...)):
             # 텍스트 변환
             transcription = tokenizer.decode(predicted_ids, skip_special_tokens=True)
             
-            return {"text": transcription}
+            # 텍스트 파일 생성
+            output_filename = f"transcript_{audio_file.filename.split('.')[0]}.txt"
+            output_path = os.path.join("transcripts", output_filename)  # transcripts 폴더에 저장
+            
+            # transcripts 폴더가 없으면 생성
+            os.makedirs("transcripts", exist_ok=True)
+            
+            # 텍스트 파일 저장
+            with open(output_path, 'w', encoding='utf-8') as f:
+                f.write(transcription)
+            
+            return {
+                "text": transcription,
+                "file_path": output_path  # 파일 경로도 함께 반환
+            }
             
         finally:
             # 임시 파일 삭제
