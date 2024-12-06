@@ -2,6 +2,8 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from transformers import WhisperForConditionalGeneration, WhisperTokenizer, WhisperFeatureExtractor
 import soundfile as sf
+from pydub import AudioSegment
+import io
 from contextlib import asynccontextmanager
 import logging
 from datetime import datetime
@@ -87,8 +89,15 @@ async def transcribe_audio(audio_file: UploadFile = File(...)):
             f.write(content)
         
         try:
-            # 오디오 파일 로드
-            audio_array, sampling_rate = sf.read(temp_path)
+            # MP4 파일을 WAV로 변환
+            if audio_file.filename.lower().endswith('.mp4'):
+                audio = AudioSegment.from_file(temp_path, format="mp4")
+                audio.export(wav_path, format="wav")
+                # WAV 파일 로드
+                audio_array, sampling_rate = sf.read(wav_path)
+            else:
+                # 기존 지원 형식 처리
+                audio_array, sampling_rate = sf.read(temp_path)
             
             # feature 추출
             features = feature_extractor(
