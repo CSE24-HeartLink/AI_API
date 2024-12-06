@@ -76,7 +76,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/transcribe")
+@app.post("/api/ai/stt/transcribe")
 async def transcribe_audio(audio_file: UploadFile = File(...)):
     """음성 파일을 텍스트로 변환"""
     try:
