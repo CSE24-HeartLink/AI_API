@@ -84,6 +84,8 @@ async def transcribe_audio(audio_file: UploadFile = File(...)):
     try:
         # 임시 파일로 저장
         temp_path = f"temp_{audio_file.filename}"
+        wav_path = f"temp_wav_{audio_file.filename.split('.')[0]}.wav"
+
         with open(temp_path, 'wb') as f:
             content = await audio_file.read()
             f.write(content)
