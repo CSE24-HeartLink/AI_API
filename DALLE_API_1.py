@@ -9,7 +9,7 @@ app = FastAPI()  # FastAPI 앱 생성
 load_dotenv()  # .env 파일의 환경변수 로드
 client = OpenAI()  # OpenAI 클라이언트 초기화
 
-@app.post("/generate-image")  # /generate-image POST 엔드포인트
+@app.post("/api/ai/img/generate-image")  # /generate-image POST 엔드포인트
 async def generate_image(text_file: UploadFile = File(...)):  # 텍스트 파일 받기
    try:
        content = await text_file.read()  # 파일 내용 읽기
