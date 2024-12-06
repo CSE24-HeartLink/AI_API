@@ -102,10 +102,11 @@ async def transcribe_audio(audio_file: UploadFile = File(...)):
             if audio_file.filename.lower().endswith('.m4a'):
                 try:
                     audio = AudioSegment.from_file(temp_path)
+                    audio = audio.set_frame_rate(16000)
                     audio.export(wav_path, format="wav")
                     # WAV 파일 로드
                     audio_array, sampling_rate = sf.read(wav_path)
-                    
+
                 except Exception as e:
                     logger.error(f"Error converting audio file: {str(e)}")
                     return {"error": f"Failed to convert audio file: {str(e)}"}
