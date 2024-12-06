@@ -80,77 +80,99 @@ app.add_middleware(
 
 @app.post("/api/ai/stt/transcribe")
 async def transcribe_audio(audio_file: UploadFile = File(...)):
-    """음성 파일을 텍스트로 변환"""
-
-    # 함수 시작 부분에 추가
-    supported_formats = ['.m4a', '.wav', '.mp3']  # 지원하는 형식들
+    """음성 파일을 텍스트로 변환 - 큰 파일은 청크 단위로 처리"""
+    
+    # 지원하는 파일 형식 체크
+    supported_formats = ['.m4a', '.wav', '.mp3']
     file_ext = os.path.splitext(audio_file.filename)[1].lower()
     if file_ext not in supported_formats:
         return {"error": f"Unsupported file format: {file_ext}"}
-    
+
     try:
         # 임시 파일로 저장
         temp_path = f"temp_{audio_file.filename}"
-        wav_path = f"temp_wav_{audio_file.filename.split('.')[0]}.wav"
-
+        
         with open(temp_path, 'wb') as f:
             content = await audio_file.read()
             f.write(content)
         
         try:
-            # MP4 파일을 WAV로 변환
-            if audio_file.filename.lower().endswith('.m4a'):
+            # 파일 크기 확인 (25MB)
+            if os.path.getsize(temp_path) < 25 * 1024 * 1024:
+                # 작은 파일 처리
                 try:
                     audio = AudioSegment.from_file(temp_path)
-                    audio = audio.set_frame_rate(16000)
+                    audio = audio.set_frame_rate(16000).set_channels(1)
+                    wav_path = f"temp_wav_{audio_file.filename.split('.')[0]}.wav"
                     audio.export(wav_path, format="wav")
-                    # WAV 파일 로드
+                    
                     audio_array, sampling_rate = sf.read(wav_path)
-
+                    features = feature_extractor(
+                        audio_array,
+                        sampling_rate=sampling_rate,
+                        return_tensors="pt"
+                    ).input_features
+                    
+                    with torch.no_grad():
+                        predicted_ids = model.generate(features)[0]
+                    
+                    transcription = tokenizer.decode(predicted_ids, skip_special_tokens=True)
+                    
+                    # 임시 파일 삭제
+                    os.remove(wav_path)
+                    
+                    return {"text": transcription}
+                    
                 except Exception as e:
-                    logger.error(f"Error converting audio file: {str(e)}")
-                    return {"error": f"Failed to convert audio file: {str(e)}"}
+                    logger.error(f"Error processing small file: {str(e)}")
+                    return {"error": f"Failed to process audio file: {str(e)}"}
+            
             else:
-                # 기존 지원 형식 처리
-                audio_array, sampling_rate = sf.read(temp_path)
-            
-            # feature 추출
-            features = feature_extractor(
-                audio_array,
-                sampling_rate=sampling_rate,
-                return_tensors="pt"
-            ).input_features
-            
-            # 음성 인식 수행
-            with torch.no_grad():
-                predicted_ids = model.generate(features)[0]
-            
-            # 텍스트 변환
-            transcription = tokenizer.decode(predicted_ids, skip_special_tokens=True)
-            
-            # 텍스트 파일 생성
-            output_filename = f"transcript_{audio_file.filename.split('.')[0]}.txt"
-            output_path = os.path.join("transcripts", output_filename)  # transcripts 폴더에 저장
-            
-            # transcripts 폴더가 없으면 생성
-            os.makedirs("transcripts", exist_ok=True)
-            
-            # 텍스트 파일 저장
-            with open(output_path, 'w', encoding='utf-8') as f:
-                f.write(transcription)
-            
-            return {
-                "text": transcription,
-                "file_path": output_path  # 파일 경로도 함께 반환
-            }
-            
+                # 큰 파일 청크 단위 처리
+                try:
+                    audio = AudioSegment.from_file(temp_path)
+                    audio = audio.set_frame_rate(16000).set_channels(1)
+                    chunk_length = 30 * 1000  # 30초
+                    transcripts = []
+                    
+                    # 오디오 분할 및 처리
+                    for i in range(0, len(audio), chunk_length):
+                        chunk = audio[i:i + chunk_length]
+                        chunk_path = f"chunk_{i}.wav"
+                        chunk.export(chunk_path, format="wav")
+                        
+                        try:
+                            audio_array, sampling_rate = sf.read(chunk_path)
+                            features = feature_extractor(
+                                audio_array,
+                                sampling_rate=sampling_rate,
+                                return_tensors="pt"
+                            ).input_features
+                            
+                            with torch.no_grad():
+                                predicted_ids = model.generate(features)[0]
+                            
+                            chunk_transcription = tokenizer.decode(predicted_ids, skip_special_tokens=True)
+                            transcripts.append(chunk_transcription)
+                            
+                        finally:
+                            # 청크 파일 삭제
+                            if os.path.exists(chunk_path):
+                                os.remove(chunk_path)
+                    
+                    # 전체 텍스트 결합
+                    final_transcription = ' '.join(transcripts)
+                    
+                    return {"text": final_transcription}
+                    
+                except Exception as e:
+                    logger.error(f"Error processing large file in chunks: {str(e)}")
+                    return {"error": f"Failed to process large audio file: {str(e)}"}
+                    
         finally:
-            # 임시 파일 삭제
+            # 원본 임시 파일 삭제
             if os.path.exists(temp_path):
                 os.remove(temp_path)
-            
-            if os.path.exists(wav_path):
-                os.remove(wav_path)
     
     except Exception as e:
         logger.error(f"Error in transcribe_audio: {str(e)}")
