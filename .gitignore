@@ -1,1 +1,6 @@
 .env
+temp_images/
+temp_uploads/
+*.log
+whisper_ko_final/
+*.safetensors
