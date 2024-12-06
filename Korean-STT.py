@@ -81,6 +81,13 @@ app.add_middleware(
 @app.post("/api/ai/stt/transcribe")
 async def transcribe_audio(audio_file: UploadFile = File(...)):
     """음성 파일을 텍스트로 변환"""
+
+    # 함수 시작 부분에 추가
+    supported_formats = ['.m4a', '.wav', '.mp3']  # 지원하는 형식들
+    file_ext = os.path.splitext(audio_file.filename)[1].lower()
+    if file_ext not in supported_formats:
+        return {"error": f"Unsupported file format: {file_ext}"}
+    
     try:
         # 임시 파일로 저장
         temp_path = f"temp_{audio_file.filename}"
@@ -92,11 +99,16 @@ async def transcribe_audio(audio_file: UploadFile = File(...)):
         
         try:
             # MP4 파일을 WAV로 변환
-            if audio_file.filename.lower().endswith('.mp4'):
-                audio = AudioSegment.from_file(temp_path, format="mp4")
-                audio.export(wav_path, format="wav")
-                # WAV 파일 로드
-                audio_array, sampling_rate = sf.read(wav_path)
+            if audio_file.filename.lower().endswith('.m4a'):
+                try:
+                    audio = AudioSegment.from_file(temp_path)
+                    audio.export(wav_path, format="wav")
+                    # WAV 파일 로드
+                    audio_array, sampling_rate = sf.read(wav_path)
+                    
+                except Exception as e:
+                    logger.error(f"Error converting audio file: {str(e)}")
+                    return {"error": f"Failed to convert audio file: {str(e)}"}
             else:
                 # 기존 지원 형식 처리
                 audio_array, sampling_rate = sf.read(temp_path)
@@ -135,6 +147,9 @@ async def transcribe_audio(audio_file: UploadFile = File(...)):
             # 임시 파일 삭제
             if os.path.exists(temp_path):
                 os.remove(temp_path)
+            
+            if os.path.exists(wav_path):
+                os.remove(wav_path)
     
     except Exception as e:
         logger.error(f"Error in transcribe_audio: {str(e)}")
