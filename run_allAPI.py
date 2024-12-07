@@ -6,7 +6,16 @@ import os
 def run_server(file_name, port):
     try:
         return subprocess.Popen(
-            [sys.executable, "-m", "uvicorn", f"{file_name}:app", "--reload", f"--port={port}"],
+            [
+                sys.executable, 
+                "-m", 
+                "uvicorn", 
+                f"{file_name}:app", 
+                "--reload", 
+                f"--port={port}",
+                "--host", 
+                "0.0.0.0"  # 모든 네트워크 인터페이스에서 접근 가능하도록 설정
+            ],
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             universal_newlines=True
